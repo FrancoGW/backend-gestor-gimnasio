@@ -9,7 +9,6 @@ const swaggerDocument = require('./swagger.json');
 const { errorHandler } = require('./middleware/errorHandler');
 const { rateLimiter } = require('./middleware/rateLimiter');
 const routes = require('./routes');
-const { setupSwagger } = require('./config/swagger');
 const logger = require('./utils/logger');
 
 // Importar rutas
@@ -33,7 +32,7 @@ app.use(morgan('combined', { stream: { write: message => logger.info(message.tri
 app.use(rateLimiter);
 
 // Swagger Documentation
-setupSwagger(app);
+// setupSwagger(app);
 
 // Documentación Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
