@@ -39,6 +39,11 @@ setupSwagger(app);
 // Documentación Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// Ruta de health check
+app.get('/', (req, res) => {
+  res.send('api funcionando correctamente');
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/gyms', gymRoutes);
