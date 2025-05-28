@@ -9,7 +9,6 @@ const swaggerDocument = require('./swagger.json');
 const { errorHandler } = require('./middleware/errorHandler');
 const { rateLimiter } = require('./middleware/rateLimiter');
 const routes = require('./routes');
-const { setupCronJobs } = require('./cron');
 const { setupSwagger } = require('./config/swagger');
 const logger = require('./utils/logger');
 
@@ -67,9 +66,6 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
 .then(() => {
   logger.info('Connected to MongoDB');
-  
-  // Setup Cron Jobs
-  setupCronJobs();
   
   // Start Server
   const PORT = process.env.PORT || 3000;
