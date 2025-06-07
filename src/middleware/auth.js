@@ -164,6 +164,7 @@ const tenantMiddleware = async (req, res, next) => {
 };
 
 module.exports = {
+  auth: authenticate,
   authenticate,
   authorize,
   checkGymAccess,
