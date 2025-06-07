@@ -59,7 +59,7 @@ const authorize = (...roles) => {
 };
 
 // Middleware para verificar acceso al gimnasio
-exports.checkGymAccess = async (req, res, next) => {
+const checkGymAccess = async (req, res, next) => {
   try {
     const gymId = req.params.gymId || req.body.gymId;
     
