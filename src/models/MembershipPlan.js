@@ -30,11 +30,7 @@ const membershipPlanSchema = new mongoose.Schema({
     enum: ['days', 'months'],
     required: true
   },
-  hasQR: {
-    type: Boolean,
-    default: false
-  },
-  benefits: [{
+  features: [{
     type: String,
     trim: true
   }],
@@ -51,6 +47,7 @@ const membershipPlanSchema = new mongoose.Schema({
 });
 
 // Índices
+membershipPlanSchema.index({ gymId: 1, name: 1 }, { unique: true });
 membershipPlanSchema.index({ gymId: 1, isActive: 1 });
 
 // Método para calcular la fecha de expiración

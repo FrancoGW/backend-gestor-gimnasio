@@ -10,6 +10,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 const { rateLimiter } = require('./middleware/rateLimiter');
 const routes = require('./routes');
 const logger = require('./utils/logger');
+const config = require('./config');
 
 // Importar rutas
 const authRoutes = require('./routes/auth');
@@ -24,10 +25,11 @@ const app = express();
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN,
+  origin: config.corsOrigin,
   credentials: true
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 app.use(rateLimiter);
 
@@ -54,7 +56,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use(errorHandler);
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
+mongoose.connect(config.mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   maxPoolSize: 10,
@@ -66,7 +68,7 @@ mongoose.connect(process.env.MONGODB_URI, {
   logger.info('Connected to MongoDB');
   
   // Start Server
-  const PORT = process.env.PORT || 3000;
+  const PORT = config.port || 3000;
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
   });

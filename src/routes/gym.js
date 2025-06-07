@@ -1,22 +1,56 @@
 const express = require('express');
 const router = express.Router();
+const { body } = require('express-validator');
 const gymController = require('../controllers/gymController');
-const { validate, schemas } = require('../middleware/validation');
-const { authMiddleware, roleMiddleware, gymOwnerMiddleware } = require('../middleware/auth');
+const { authenticate, authorize, checkGymAccess } = require('../middleware/auth');
 
-// Middleware de autenticación para todas las rutas
-router.use(authMiddleware);
+// Validaciones
+const gymValidation = [
+  body('name').notEmpty().withMessage('El nombre es requerido'),
+  body('address').notEmpty().withMessage('La dirección es requerida'),
+  body('phone').notEmpty().withMessage('El teléfono es requerido'),
+  body('email').isEmail().withMessage('Email inválido'),
+  body('ownerId').isMongoId().withMessage('ID de propietario inválido'),
+  body('settings').optional().isObject().withMessage('Configuración inválida')
+];
 
-// Rutas para superadmin
-router.post('/', roleMiddleware('superadmin'), validate(schemas.createGym), gymController.createGym);
-router.get('/', roleMiddleware('superadmin'), gymController.listGyms);
+// Rutas
+router.post('/', 
+  authenticate, 
+  authorize('superadmin'), 
+  gymValidation, 
+  gymController.createGym
+);
 
-// Rutas para propietarios de gimnasio
-router.get('/:id', gymOwnerMiddleware, gymController.getGym);
-router.put('/:id', gymOwnerMiddleware, validate(schemas.updateGym), gymController.updateGym);
-router.delete('/:id', gymOwnerMiddleware, gymController.deleteGym);
-router.put('/:id/plan', gymOwnerMiddleware, validate(schemas.updateGymPlan), gymController.updateGymPlan);
-router.get('/:id/stats', gymOwnerMiddleware, gymController.getGymStats);
-router.get('/:id/limits', gymOwnerMiddleware, gymController.validateGymLimits);
+router.get('/', 
+  authenticate, 
+  authorize('superadmin'), 
+  gymController.getAllGyms
+);
+
+router.get('/:id', 
+  authenticate, 
+  checkGymAccess, 
+  gymController.getGymById
+);
+
+router.put('/:id', 
+  authenticate, 
+  checkGymAccess, 
+  gymValidation, 
+  gymController.updateGym
+);
+
+router.delete('/:id', 
+  authenticate, 
+  authorize('superadmin'), 
+  gymController.deleteGym
+);
+
+router.get('/:id/stats', 
+  authenticate, 
+  checkGymAccess, 
+  gymController.getGymStats
+);
 
 module.exports = router; 

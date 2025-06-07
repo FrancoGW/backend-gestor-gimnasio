@@ -24,16 +24,35 @@ const checkInSchema = new mongoose.Schema({
     latitude: Number,
     longitude: Number
   },
-  notes: String
+  notes: {
+    type: String,
+    trim: true
+  }
 }, {
   timestamps: true
 });
 
 // Índices
-checkInSchema.index({ gymId: 1, timestamp: -1 });
 checkInSchema.index({ studentId: 1, timestamp: -1 });
-checkInSchema.index({ gymId: 1, timestamp: 1 });
-checkInSchema.index({ timestamp: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 }); // TTL: 90 días
+checkInSchema.index({ gymId: 1, timestamp: -1 });
+checkInSchema.index({ timestamp: -1 });
+
+// Método para obtener check-ins de hoy
+checkInSchema.statics.getTodayCheckIns = async function(gymId) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  return this.find({
+    gymId,
+    timestamp: {
+      $gte: today,
+      $lt: tomorrow
+    }
+  }).populate('studentId', 'firstName lastName dni');
+};
 
 // Método para obtener check-ins de un estudiante
 checkInSchema.statics.getStudentCheckIns = function(studentId, options = {}) {

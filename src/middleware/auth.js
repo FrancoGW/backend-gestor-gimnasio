@@ -1,44 +1,94 @@
 const jwt = require('jsonwebtoken');
+const config = require('../config');
 const User = require('../models/User');
 const { UnauthorizedError, ForbiddenError } = require('../utils/errors');
 
-const authMiddleware = async (req, res, next) => {
+// Middleware para verificar token JWT
+exports.authenticate = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      throw new UnauthorizedError('Token no proporcionado');
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId);
+    const authHeader = req.headers.authorization;
     
-    if (!user) {
-      throw new UnauthorizedError('Usuario no encontrado');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'No se proporcionó token de autenticación',
+        code: 'AUTH_TOKEN_MISSING'
+      });
     }
 
-    req.user = user;
-    next();
+    const token = authHeader.split(' ')[1];
+    
+    try {
+      const decoded = jwt.verify(token, config.jwtSecret);
+      const user = await User.findById(decoded.userId);
+      
+      if (!user || !user.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: 'Usuario no encontrado o inactivo',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+
+      req.user = user;
+      next();
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token inválido o expirado',
+        code: 'INVALID_TOKEN'
+      });
+    }
   } catch (error) {
     next(error);
   }
 };
 
-const roleMiddleware = (...roles) => {
+// Middleware para verificar roles
+exports.authorize = (...roles) => {
   return (req, res, next) => {
-    try {
-      if (!req.user) {
-        throw new UnauthorizedError('Usuario no autenticado');
-      }
-
-      if (!roles.includes(req.user.role)) {
-        throw new UnauthorizedError('No tiene permisos para realizar esta acción');
-      }
-
-      next();
-    } catch (error) {
-      next(error);
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tiene permiso para realizar esta acción',
+        code: 'UNAUTHORIZED_ROLE'
+      });
     }
+    next();
   };
+};
+
+// Middleware para verificar acceso al gimnasio
+exports.checkGymAccess = async (req, res, next) => {
+  try {
+    const gymId = req.params.gymId || req.body.gymId;
+    
+    if (!gymId) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de gimnasio no proporcionado',
+        code: 'GYM_ID_MISSING'
+      });
+    }
+
+    // Superadmin tiene acceso a todos los gimnasios
+    if (req.user.role === 'superadmin') {
+      return next();
+    }
+
+    // Verificar que el usuario pertenezca al gimnasio
+    if (req.user.gymId.toString() !== gymId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tiene acceso a este gimnasio',
+        code: 'GYM_ACCESS_DENIED'
+      });
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
 
 const gymOwnerMiddleware = async (req, res, next) => {
@@ -114,8 +164,9 @@ const tenantMiddleware = async (req, res, next) => {
 };
 
 module.exports = {
-  authMiddleware,
-  roleMiddleware,
+  authenticate,
+  authorize,
+  checkGymAccess,
   gymOwnerMiddleware,
   studentMiddleware,
   planLimitsMiddleware,

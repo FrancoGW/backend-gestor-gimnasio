@@ -1,21 +1,37 @@
 const express = require('express');
 const router = express.Router();
+const { body } = require('express-validator');
 const checkInController = require('../controllers/checkInController');
-const { validate, schemas } = require('../middleware/validation');
-const { authMiddleware, gymOwnerMiddleware } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 
-// Middleware de autenticación para todas las rutas
-router.use(authMiddleware);
+// Validaciones
+const checkInValidation = [
+  body('checkInMethod').isIn(['dni', 'qr']).withMessage('Método de check-in inválido'),
+  body('dni').if(body('checkInMethod').equals('dni')).notEmpty().withMessage('DNI requerido'),
+  body('qrCode').if(body('checkInMethod').equals('qr')).notEmpty().withMessage('Código QR requerido'),
+  body('location').optional().isObject().withMessage('Ubicación inválida'),
+  body('location.latitude').optional().isNumeric().withMessage('Latitud inválida'),
+  body('location.longitude').optional().isNumeric().withMessage('Longitud inválida')
+];
 
-// Rutas para propietarios de gimnasio
-router.post('/', gymOwnerMiddleware, validate(schemas.checkIn), checkInController.registerCheckIn);
-router.get('/', gymOwnerMiddleware, checkInController.listCheckIns);
-router.get('/:id', gymOwnerMiddleware, checkInController.getCheckIn);
-router.get('/student/:studentId', gymOwnerMiddleware, checkInController.getStudentCheckIns);
+// Rutas
+router.post('/',
+  authenticate,
+  authorize('gym_owner'),
+  checkInValidation,
+  checkInController.createCheckIn
+);
 
-// Rutas para estadísticas
-router.get('/stats', gymOwnerMiddleware, checkInController.getCheckInStats);
-router.get('/active', gymOwnerMiddleware, checkInController.getActiveStudents);
-router.get('/peak-hours', gymOwnerMiddleware, checkInController.getPeakHours);
+router.get('/',
+  authenticate,
+  authorize('gym_owner'),
+  checkInController.getCheckIns
+);
+
+router.get('/:id',
+  authenticate,
+  authorize('gym_owner'),
+  checkInController.getCheckInById
+);
 
 module.exports = router; 

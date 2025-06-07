@@ -1,25 +1,57 @@
 const express = require('express');
 const router = express.Router();
+const { body } = require('express-validator');
 const studentController = require('../controllers/studentController');
-const { validate, schemas } = require('../middleware/validation');
-const { authMiddleware, gymOwnerMiddleware } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 
-// Middleware de autenticación para todas las rutas
-router.use(authMiddleware);
+// Validaciones
+const studentValidation = [
+  body('firstName').notEmpty().withMessage('El nombre es requerido'),
+  body('lastName').notEmpty().withMessage('El apellido es requerido'),
+  body('dni').notEmpty().withMessage('El DNI es requerido'),
+  body('email').isEmail().withMessage('Email inválido'),
+  body('phone').notEmpty().withMessage('El teléfono es requerido'),
+  body('membershipPlanId').isMongoId().withMessage('ID de plan inválido'),
+  body('photo').optional().isURL().withMessage('URL de foto inválida')
+];
 
-// Rutas para propietarios de gimnasio
-router.post('/', gymOwnerMiddleware, validate(schemas.createStudent), studentController.createStudent);
-router.get('/', gymOwnerMiddleware, studentController.listStudents);
-router.get('/:id', gymOwnerMiddleware, studentController.getStudent);
-router.put('/:id', gymOwnerMiddleware, validate(schemas.updateStudent), studentController.updateStudent);
-router.delete('/:id', gymOwnerMiddleware, studentController.deleteStudent);
-router.put('/:id/membership', gymOwnerMiddleware, validate(schemas.updateMembership), studentController.updateMembership);
-router.get('/:id/check-ins', gymOwnerMiddleware, studentController.getCheckInHistory);
+// Rutas
+router.post('/',
+  authenticate,
+  authorize('gym_owner'),
+  studentValidation,
+  studentController.createStudent
+);
 
-// Rutas para check-in
-router.post('/:id/check-in', gymOwnerMiddleware, validate(schemas.checkIn), studentController.checkIn);
+router.get('/',
+  authenticate,
+  authorize('gym_owner'),
+  studentController.getAllStudents
+);
 
-// Ruta para procesar membresías expiradas
-router.post('/process-expired', gymOwnerMiddleware, studentController.processExpiredMemberships);
+router.get('/:id',
+  authenticate,
+  authorize('gym_owner'),
+  studentController.getStudentById
+);
+
+router.put('/:id',
+  authenticate,
+  authorize('gym_owner'),
+  studentValidation,
+  studentController.updateStudent
+);
+
+router.delete('/:id',
+  authenticate,
+  authorize('gym_owner'),
+  studentController.deleteStudent
+);
+
+router.post('/:id/send-qr-card',
+  authenticate,
+  authorize('gym_owner'),
+  studentController.sendQRCard
+);
 
 module.exports = router; 

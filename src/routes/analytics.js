@@ -1,18 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const analyticsController = require('../controllers/analyticsController');
-const { authMiddleware, gymOwnerMiddleware } = require('../middleware/auth');
+const { auth, authorize } = require('../middleware/auth');
 
-// Middleware de autenticación para todas las rutas
-router.use(authMiddleware);
+// Todas las rutas requieren autenticación y autorización de propietario de gimnasio
+router.use(auth);
+router.use(authorize('gym_owner'));
 
-// Rutas para propietarios de gimnasio
-router.get('/daily', gymOwnerMiddleware, analyticsController.generateDailyAnalytics);
-router.get('/weekly', gymOwnerMiddleware, analyticsController.generateWeeklyAnalytics);
-router.get('/monthly', gymOwnerMiddleware, analyticsController.generateMonthlyAnalytics);
-router.get('/check-ins', gymOwnerMiddleware, analyticsController.getCheckInStats);
-router.get('/students', gymOwnerMiddleware, analyticsController.getStudentStats);
-router.get('/revenue', gymOwnerMiddleware, analyticsController.getRevenueStats);
-router.get('/dashboard', gymOwnerMiddleware, analyticsController.getDashboardStats);
+// Obtener estadísticas de estudiantes
+router.get('/students', analyticsController.getStudentStats);
+
+// Obtener estadísticas de check-ins
+router.get('/check-ins', analyticsController.getCheckInStats);
+
+// Obtener estadísticas de ingresos
+router.get('/revenue', analyticsController.getRevenueStats);
 
 module.exports = router; 

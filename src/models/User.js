@@ -11,12 +11,6 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
-    minlength: 6
-  },
-  role: {
-    type: String,
-    enum: ['superadmin', 'gym_owner', 'client'],
     required: true
   },
   firstName: {
@@ -29,6 +23,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  role: {
+    type: String,
+    enum: ['superadmin', 'gym_owner', 'client'],
+    required: true
+  },
   phone: {
     type: String,
     trim: true
@@ -39,7 +38,10 @@ const userSchema = new mongoose.Schema({
   },
   gymId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Gym'
+    ref: 'Gym',
+    required: function() {
+      return this.role === 'gym_owner' || this.role === 'client';
+    }
   },
   createdAt: {
     type: Date,
@@ -58,7 +60,7 @@ userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ gymId: 1, role: 1 });
 userSchema.index({ role: 1 });
 
-// Método para hashear password antes de guardar
+// Método para hashear la contraseña antes de guardar
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
@@ -71,7 +73,7 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Método para comparar passwords
+// Método para comparar contraseñas
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
