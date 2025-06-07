@@ -19,7 +19,7 @@ router.post('/',
   authenticate,
   authorize('gym_owner'),
   checkInValidation,
-  checkInController.createCheckIn
+  checkInController.registerCheckIn
 );
 
 router.get('/',
