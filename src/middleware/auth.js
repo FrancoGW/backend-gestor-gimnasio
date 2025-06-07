@@ -4,7 +4,7 @@ const User = require('../models/User');
 const { UnauthorizedError, ForbiddenError } = require('../utils/errors');
 
 // Middleware para verificar token JWT
-exports.authenticate = async (req, res, next) => {
+const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     
