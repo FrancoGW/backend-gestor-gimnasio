@@ -44,6 +44,11 @@ app.get('/', (req, res) => {
   res.send('api funcionando correctamente');
 });
 
+// Ruta adicional para verificar el estado de la API
+app.get('/api', (req, res) => {
+  res.send('API funcionando correctamente');
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/gyms', gymRoutes);
